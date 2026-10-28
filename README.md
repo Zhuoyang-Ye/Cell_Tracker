@@ -3,9 +3,7 @@
 The primary dataset for this application is GACh–GECO two-photon imaging.
 
 Run `python main.py` from this folder in the `analysis_mpfi` environment.
-This updates the existing Python application with the MATLAB_V2 workflow;
-MATLAB_V1 and MATLAB_V2 are unchanged. The GUI uses the parent pipeline's
-`Utilities.paper_style` for diagnostic figures.
+The GUI uses the parent pipeline's `Utilities.paper_style` for diagnostic figures.
 
 ## Workflow
 
