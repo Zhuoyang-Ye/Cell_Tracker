@@ -26,28 +26,25 @@ The GUI uses the parent pipeline's `Utilities.paper_style` for diagnostic figure
 The ROI canvas's existing double-click classification toggle is a display preview;
 it does not edit suite2p files or change probability-based tracking selection.
 
-## What the preset values mean
+## Parameters
 
-A default is simply a value prefilled when the application opens. The application
-starts with **MATLAB V2 settings**. The previous Python numeric settings are still
-available as a preset; both presets use the corrected matching algorithms.
+The application opens with these values; each can be edited before a run.
 
-| Control | MATLAB V2 | Previous Python | Meaning |
-|---|---:|---:|---|
-| Align top-N | 200 | 300 | Highest-probability ROIs used to find the transform |
-| Track probability ≥ | 0.2 | 0 | ROIs included in matching; zero includes all |
-| Match IOU ≥ | 0.4 | 0.3 | Required mask intersection-over-union |
-| Search step scale | 0.5 | 1.0 | Optimizer step-size scaling |
-| Max evaluations / start | 2000 | 5000 | Evaluation limit for each of five starts |
-| Quality probability ≥ | 0.9 | 0.9 | Separate threshold for session quality counts |
-| Min high-confidence ROIs | 60 | 0 | Exclude sessions below this count; zero disables |
-| Max missing sessions | 2 | 2 | Unified-export selection; newly added to Python |
+| Control | Value | Meaning |
+|---|---:|---|
+| Align top-N | 200 | Highest-probability ROIs used to find the transform |
+| Track probability ≥ | 0.2 | ROIs included in matching; zero includes all |
+| Match IOU ≥ | 0.4 | Required mask intersection-over-union |
+| Search step scale | 0.5 | Optimizer step-size scaling |
+| Max evaluations / start | 2000 | Evaluation limit for each of five starts |
+| Quality probability ≥ | 0.9 | Separate threshold for session quality counts |
+| Min high-confidence ROIs | 60 | Exclude sessions below this count; zero disables |
+| Max missing sessions | 2 | Unified-export selection |
 
-The V2 minimum count of 60 is inherited from the MATLAB settings. Inspect the
-GACh–GECO session counts in Session QC to decide whether this cutoff suits the
-sessions being analysed; set it to zero to disable the cutoff. Changing quality
-thresholds does not change the top-N alignment subset or the tracking probability
-threshold.
+Inspect the GACh–GECO session counts in Session QC to decide whether the
+minimum of 60 high-confidence ROIs suits the sessions being analysed; set it to
+zero to disable the cutoff. Changing quality thresholds does not change the
+top-N alignment subset or the tracking probability threshold.
 
 ## Matching and registration
 
