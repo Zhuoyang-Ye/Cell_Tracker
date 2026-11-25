@@ -5,23 +5,38 @@ import os
 from pathlib import Path
 import tempfile
 import zipfile
+import sys
 import numpy as np
 
-CACHE_VERSION = 2
+# 3: keys no longer contain the folder path or file times (2026-11-24).
+CACHE_VERSION = 3
+
+
+def default_cache_dir():
+    """This computer's per-user cache folder; an app's own folder may be read-only."""
+    if sys.platform == 'win32':
+        base = Path(os.environ.get('LOCALAPPDATA') or Path.home() / 'AppData' / 'Local')
+    elif sys.platform == 'darwin':
+        base = Path.home() / 'Library' / 'Caches'
+    else:
+        base = Path(os.environ.get('XDG_CACHE_HOME') or Path.home() / '.cache')
+    return base / 'Cell_Tracker' / 'alignment_cache'
 
 
 def fingerprint(session):
+    """Identify a session by what registration and IOU read, not where it is stored.
+
+    Leaving out the folder path and file times keeps keys equal for the same data
+    on Windows (Z:) and macOS (/Volumes). Changed suite2p files are caught by
+    Session.validate, and ops.npy enters only through the image size.
+    """
     h = hashlib.sha256()
-    h.update(str(session.folder.resolve()).encode())
-    h.update(str(session.image_size).encode())
-    # Hash the loaded data too: in-memory edits must invalidate cached registration.
+    h.update(session.name.encode())
+    h.update(str(tuple(int(v) for v in session.image_size)).encode())
     for arr in [session.iscell_prob, *session.xpix, *session.ypix]:
         a = np.ascontiguousarray(arr)
         h.update(str((a.shape, a.dtype.str)).encode())
         h.update(a.tobytes())
-    for name, stamp in sorted(session.loaded_stamp.items()):
-        if name in ('stat.npy', 'iscell.npy', 'ops.npy'):
-            h.update(str((name, stamp)).encode())
     return h.hexdigest()
 
 

@@ -8,6 +8,8 @@ import shutil
 import tempfile
 import numpy as np
 
+from .session import open_trace
+
 
 def _json_default(value):
     if isinstance(value, Path):
@@ -31,12 +33,13 @@ def _write_trace(path, trace, ids):
     out = np.lib.format.open_memmap(path, mode='w+', dtype=dtype,
                                   shape=(len(ids), trace.shape[1]))
     out[:] = np.nan
+    source = open_trace(trace)  # mapped only for this write (Windows file locks)
     for start in range(0, len(ids), 32):
         rows = np.arange(start, min(start + 32, len(ids)))
         present = rows[ids[rows] >= 0]
-        out[present] = trace[ids[present]]
+        out[present] = source[ids[present]]
     out.flush()
-    del out
+    del out, source
 
 
 def export_results(result, output_parent, include_traces=True, matlab=False):
@@ -99,6 +102,7 @@ def _write_export(r, out, include_traces, matlab):
                 if session.Fneu is not None:
                     traces['Fneu'] = np.load(out / f'unified_Fneu_{session.name}.npy', mmap_mode='r')
                 savemat(out / f'{session.name}_Fu.mat', traces)
+                del traces  # an open map would block renaming or removing the staging folder on Windows
     if matlab:
         from scipy.io import savemat
         rowmap = unified.astype(float) + 1

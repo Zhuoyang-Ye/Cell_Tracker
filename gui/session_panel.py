@@ -1,10 +1,11 @@
-from pathlib import Path
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem,
     QPushButton, QGroupBox, QLabel, QDoubleSpinBox, QSpinBox,
     QFileDialog, QProgressBar, QCheckBox, QRadioButton, QComboBox, QScrollArea,
 )
 from PyQt5.QtCore import Qt, pyqtSignal
+
+from core.cache import default_cache_dir
 
 
 PRESETS = {
@@ -126,7 +127,7 @@ class SessionPanel(QWidget):
 
         self._cache_check = QCheckBox('Reuse disk cache')
         self._cache_check.setChecked(True)
-        self._cache_folder = Path(__file__).resolve().parents[1] / '.alignment_cache'
+        self._cache_folder = default_cache_dir()
         self._cache_check.setToolTip(f'Cache folder: {self._cache_folder}\nInvalidated when inputs or relevant settings change.')
         outer.addWidget(self._cache_check)
         self._btn_run = QPushButton('Run alignment and tracking')

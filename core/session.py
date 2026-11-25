@@ -35,6 +35,37 @@ def source_stamp(folder):
     return result
 
 
+class TraceFile:
+    """A suite2p trace file (F.npy / Fneu.npy) opened only while it is read.
+
+    A memory map held for the whole session keeps the file locked on Windows, so
+    suite2p could not rewrite it while the GUI had the session loaded. This keeps
+    only the shape and dtype; ``open()`` maps the file for one export, and the map
+    closes when the caller drops it.
+    """
+
+    def __init__(self, path):
+        self.path = Path(path)
+        data = np.load(self.path, mmap_mode='r')
+        self.shape, self.dtype = tuple(data.shape), data.dtype
+        del data
+
+    @property
+    def ndim(self):
+        return len(self.shape)
+
+    def open(self):
+        return np.load(self.path, mmap_mode='r')
+
+    def __repr__(self):
+        return f'TraceFile({self.path.name}, shape={self.shape}, dtype={self.dtype})'
+
+
+def open_trace(trace):
+    """The array to read from a TraceFile or an in-memory array."""
+    return trace.open() if isinstance(trace, TraceFile) else trace
+
+
 @dataclass
 class Session:
     """One imaging session loaded from a suite2p output folder."""
@@ -46,8 +77,8 @@ class Session:
     iscell: np.ndarray  # (n_rois, 2): col0 = is_cell bool, col1 = probability
     mean_img: np.ndarray   # (H, W) float32
     image_size: tuple      # (H, W)
-    F: Optional[np.ndarray] = None     # (n_rois, n_frames)
-    Fneu: Optional[np.ndarray] = None  # (n_rois, n_frames)
+    F: Optional[np.ndarray] = None     # (n_rois, n_frames); TraceFile when loaded from disk
+    Fneu: Optional[np.ndarray] = None  # (n_rois, n_frames); TraceFile when loaded from disk
     loaded_stamp: dict = field(default_factory=dict, repr=False)
 
     @classmethod
@@ -66,8 +97,8 @@ class Session:
         xpix = [np.asarray(s['xpix']) for s in stat]
         ypix = [np.asarray(s['ypix']) for s in stat]
 
-        F = np.load(folder / 'F.npy', mmap_mode='r') if (folder / 'F.npy').exists() else None
-        Fneu = np.load(folder / 'Fneu.npy', mmap_mode='r') if (folder / 'Fneu.npy').exists() else None
+        F = TraceFile(folder / 'F.npy') if (folder / 'F.npy').exists() else None
+        Fneu = TraceFile(folder / 'Fneu.npy') if (folder / 'Fneu.npy').exists() else None
 
         session = cls(
             name=_session_label(folder),

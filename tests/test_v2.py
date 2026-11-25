@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -8,7 +9,7 @@ import numpy as np
 from scipy.io import loadmat
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from core.session import Session, _session_label
+from core.session import Session, TraceFile, open_trace, _session_label
 from core.quality import prepare_sessions, session_report
 from core.tracking import (PairwiseCache, apply_tracking, compute_pairwise, run_batch,
                            one_to_one, _raw_pair, cache_is_valid)
@@ -59,7 +60,12 @@ class NamingAndQuality(unittest.TestCase):
             np.save(folder/'Fneu.npy', s.Fneu)
             loaded = Session.load(folder)
             self.assertEqual(loaded.name, 'A811-20260422-01')
-            self.assertIsInstance(loaded.F, np.memmap)
+            self.assertIsInstance(loaded.F, TraceFile)
+            self.assertEqual(loaded.F.shape, s.F.shape)
+            np.testing.assert_array_equal(np.asarray(open_trace(loaded.F)), s.F)
+            # A loaded session must not lock its trace files (Windows): suite2p can rewrite them.
+            np.save(folder/'F_new.npy', s.F + 1)
+            os.replace(folder/'F_new.npy', folder/'F.npy')
             np.save(folder/'iscell.npy', np.ones((3,2)))
             with self.assertRaisesRegex(ValueError, 'changed'):
                 loaded.validate()
@@ -166,6 +172,18 @@ class Caching(unittest.TestCase):
                 compute_pairwise(sessions, param)
                 self.assertEqual(align.call_count, 8)  # only two pairs with changed input
                 self.assertFalse(cache_is_valid(first, sessions, param))
+
+    def test_cache_keys_do_not_depend_on_folder(self):
+        # The same sessions seen as Z:\... on Windows and /Volumes/... on macOS share the cache.
+        with tempfile.TemporaryDirectory() as folder:
+            names = ['A811-20260422-01', 'A811-20260423-01']
+            windows = [session(n, folder=f'Z:/data/{n}') for n in names]
+            mac = [session(n, folder=f'/Volumes/data/{n}') for n in names]
+            with patch('core.tracking.find_alignment', return_value=np.array([0,0,0,1,1,0.])) as align:
+                compute_pairwise(windows, dict(cache_dir=folder))
+                result = compute_pairwise(mac, dict(cache_dir=folder))
+            self.assertEqual(align.call_count, 1)
+            self.assertEqual(result.cache_info['disk_hits'], 1)
 
     def test_corrupt_cache_is_recomputed(self):
         with tempfile.TemporaryDirectory() as folder:

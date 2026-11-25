@@ -1,5 +1,3 @@
-from pathlib import Path
-import sys
 import numpy as np
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QPushButton, QTextEdit,
@@ -10,16 +8,14 @@ import matplotlib
 matplotlib.use('Qt5Agg')
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 
-# The shared manuscript style lives in the parent imaging pipeline.
-sys.path.append(str(Path(__file__).resolve().parents[3]))
-from Utilities import paper_style as ps
+from . import plot_style
 import matplotlib.pyplot as plt
 
 
 class _MplCanvas(FigureCanvasQTAgg):
     def __init__(self, axes_in=(3.2, 2.6)):
-        ps.use_paper_style(font_size=9)
-        self.fig, self.ax = ps.subplots(axes_in=axes_in)
+        plot_style.use_style(font_size=9)
+        self.fig, self.ax = plot_style.subplots(axes_in)
         plt.close(self.fig)  # embedded canvas owns this figure, not a separate window
         super().__init__(self.fig)
 

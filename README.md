@@ -3,7 +3,9 @@
 The primary dataset for this application is GACh–GECO two-photon imaging.
 
 Run `python main.py` from this folder in the `analysis_mpfi` environment.
-The GUI uses the parent pipeline's `Utilities.paper_style` for diagnostic figures.
+Inside the 2P imaging repo (`2_Img_Python/Cell_Tracker/python`), the result plots
+use the pipeline's `Utilities.paper_style`. In a standalone clone, where that
+module is absent, they use plain matplotlib (`gui/plot_style.py`).
 
 ## Workflow
 
@@ -70,7 +72,17 @@ top-N alignment subset or the tracking probability threshold.
 
 ## Cache and validation
 
-`python/.alignment_cache/` stores versioned numeric NPZ files. Disable disk reuse
+Versioned numeric NPZ files are stored in this computer's per-user cache folder
+(its path is shown in the **Reuse disk cache** tooltip):
+
+* Windows: `%LOCALAPPDATA%\Cell_Tracker\alignment_cache`
+* macOS: `~/Library/Caches/Cell_Tracker/alignment_cache`
+* Linux: `~/.cache/Cell_Tracker/alignment_cache`
+
+Before 2026-11-24 the cache was `.alignment_cache/` in this folder. That folder
+is no longer read and can be deleted. Cache keys use the session name and the
+ROI data, not the folder path or file times, so the same session gives the same
+keys on Windows (`Z:\`) and macOS (`/Volumes/`). Disable disk reuse
 with the checkbox; the current run's in-memory cache is still available.
 Registration and IOU have separate cache keys, so changing tracking probability
 can reuse registration, while changing IOU threshold or export selection needs
@@ -81,8 +93,10 @@ reloading the session. A broken cache is ignored and recomputed; delete the
 cache directory at any time when the application is idle.
 
 The loader checks coordinate validity, stat/iscell/F/Fneu row counts, image
-size and trace frame consistency. Traces are memory mapped rather than loaded
-in full. Sessions with no tracking ROIs are excluded before registration.
+size and trace frame consistency. Only the shapes of F and Fneu are kept after
+loading. The files are memory-mapped only while an export reads them, so a
+loaded session does not lock them on Windows. Sessions with no tracking ROIs are
+excluded before registration.
 
 ## Export conventions
 
